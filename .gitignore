@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+allure-results/
+allure-report/
+playwright-report/
+test-results/
+.qia/baselines/
+*.png
+
+# Keep DNA profile but not baselines
+!.qia/dna-profile.json

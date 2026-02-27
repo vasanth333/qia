@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install 2>&1)",
+      "Bash(npm run build 2>&1)",
+      "Bash(npm install uuid @types/uuid 2>&1 | tail -5)",
+      "Bash(node /Users/vasanthakumarp/qia/create-ticket.mjs 2>&1)",
+      "Bash(npm run build 2>&1 && echo \"BUILD OK\")",
+      "Bash(rm /Users/vasanthakumarp/qia/create-ticket.mjs && node /Users/vasanthakumarp/qia/dist/index.js run SCRUM-5 2>&1)",
+      "Bash(node dist/index.js run SCRUM-5 2>&1)",
+      "Bash(brew install ollama 2>&1)",
+      "Bash(ollama pull llama3 2>&1)",
+      "Bash(brew services start ollama 2>&1)",
+      "Bash(npm install openai 2>&1 | tail -5)",
+      "Bash(npm run build 2>&1 && QIA_AUTO_APPROVE_GATES=true node dist/index.js run SCRUM-5 2>&1)",
+      "Bash(gh repo create vasanthakumarp/qia --public --source=. --push 2>&1)",
+      "Bash(brew install gh 2>&1 | tail -10)",
+      "Bash(git push origin qia/scrum-5-2026-02-27T16-41-36 --set-upstream 2>&1)",
+      "Bash(git remote set-url origin https://github.com/vasanth333/qia.git && git push origin qia/scrum-5-2026-02-27T16-41-36 --set-upstream 2>&1)",
+      "Bash(node /Users/vasanthakumarp/qia/finish-run.mjs 2>&1)"
+    ]
+  }
+}
