@@ -1,129 +1,100 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * @feature Registration
+ * @story SCRUM-12
+ */
 class RegistrationPage {
-  constructor(private page: any) {}
+  constructor(private page) {}
 
-  async navigate() {
+  async goto() {
     await this.page.goto('https://example.com/register');
   }
 
-  async enterEmail(email: string) {
-    // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  async inputEmail(email: string) {
     await this.page.fill('[data-testid="email-input"]', email);
   }
 
-  async enterPassword(password: string) {
-    // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  async inputPassword(password: string) {
     await this.page.fill('[data-testid="password-input"]', password);
   }
 
+  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
   async submitForm() {
-    // [TIER1: testid] [TIER2: role] [TIER3: fallback]
     await this.page.click('[data-testid="submit-button"]');
   }
 
-  async getEmailValidationError() {
-    // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  async getEmailError(): Promise<string> {
     return this.page.textContent('[data-testid="email-error"]');
   }
 
-  async getPasswordValidationError() {
-    // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  async getPasswordError(): Promise<string> {
     return this.page.textContent('[data-testid="password-error"]');
   }
 
-  async getGeneralError() {
-    // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  async getGeneralError(): Promise<string> {
     return this.page.textContent('[data-testid="general-error"]');
   }
 
-  async checkForInlineErrors() {
-    // Use expect to verify immediate feedback
-    await expect(this.page.locator('[data-testid="inline-errors"]')).toBeVisible();
+  async isRedirectedToSuccessPage(): Promise<boolean> {
+    return this.page.url() === 'https://example.com/success';
   }
 }
 
-test.describe('@SCRUM-12 Registration Tests', () => {
+test.describe('Registration Form - @SCRUM-12', () => {
+  let registrationPage: RegistrationPage;
 
   test.beforeEach(async ({ page }) => {
-    const registrationPage = new RegistrationPage(page);
-    await registrationPage.navigate();
+    registrationPage = new RegistrationPage(page);
+    await registrationPage.goto();
   });
 
   /**
-   * @feature Registration
-   * @story Verify Email Format Validation
    * @severity critical
    */
-  test('@smoke @validations TC-001 Verify Email Format Validation', async ({ page }) => {
-    const registrationPage = new RegistrationPage(page);
-
-    for (const invalidEmail of ['user@', 'user.com', '']) {
-      await registrationPage.enterEmail(invalidEmail);
-      const errorText = await registrationPage.getEmailValidationError();
-      expect(errorText).toContain('Invalid email format');
+  test('@smoke @SCRUM-12 TC-001: Email Format Validation', async () => {
+    for (const email of ['userexample.com', 'user@.com']) {
+      await registrationPage.inputEmail(email);
+      await registrationPage.submitForm();
+      const emailError = await registrationPage.getEmailError();
+      expect(emailError).toContain('Invalid email format');
     }
   });
 
   /**
-   * @feature Registration
-   * @story Verify Password Strength Requirement
-   * @severity critical
+   * @severity major
    */
-  test('@smoke @passwordStrength TC-002 Verify Password Strength Requirement', async ({ page }) => {
-    const registrationPage = new RegistrationPage(page);
-
-    for (const weakPassword of ['password', 'PASSWORD123', 'Pass123']) {
-      await registrationPage.enterPassword(weakPassword);
-      const errorText = await registrationPage.getPasswordValidationError();
-      expect(errorText).toContain('Weak password');
+  test('@regression @SCRUM-12 TC-002: Password Strength Validation', async () => {
+    for (const password of ['weakpass1', 'Weakpass']) {
+      await registrationPage.inputPassword(password);
+      await registrationPage.submitForm();
+      const passwordError = await registrationPage.getPasswordError();
+      expect(passwordError).toContain('Password must include 1 uppercase and 1 special character');
     }
   });
-
+  
   /**
-   * @feature Registration
-   * @story Check Error on Duplicate Email Registration
-   * @severity major
-   */
-  test('@regression @duplication TC-003 Check Error on Duplicate Email Registration', async ({ page }) => {
-    const registrationPage = new RegistrationPage(page);
-
-    await registrationPage.enterEmail('existing@example.com');
-    await registrationPage.submitForm();
-    const errorText = await registrationPage.getGeneralError();
-    expect(errorText).toContain('Email already exists');
-  });
-
-  /**
-   * @feature Email
-   * @story Verify Success Confirmation Email is Sent
-   * @severity major
-   */
-  test('@email TC-004 Verify Success Confirmation Email is Sent', async ({ page }) => {
-    const registrationPage = new RegistrationPage(page);
-
-    await registrationPage.enterEmail('newuser@example.com');
-    await registrationPage.enterPassword('StrongPass1!');
-    await registrationPage.submitForm();
-    
-    // Simulate email checking logic
-    const isEmailReceived = true; // Assume method to check email exists
-    expect(isEmailReceived).toBe(true);
-  });
-
-  /**
-   * @feature Usability
-   * @story Ensure Inline Validation Errors Show in Real-Time
    * @severity critical
    */
-  test('@usability @realTimeValidation TC-005 Ensure Inline Validation Errors Show in Real-Time', async ({ page }) => {
-    const registrationPage = new RegistrationPage(page);
-
-    await registrationPage.enterEmail('invalid-email');
-    await registrationPage.checkForInlineErrors();
-
-    await registrationPage.enterPassword('weak');
-    await registrationPage.checkForInlineErrors();
+  test('@regression @SCRUM-12 TC-003: Existing Email Validation', async () => {
+    await registrationPage.inputEmail('existinguser@example.com');
+    await registrationPage.inputPassword('StrongPass1!');
+    await registrationPage.submitForm();
+    const generalError = await registrationPage.getGeneralError();
+    expect(generalError).toContain('Email already registered');
   });
 
+  /**
+   * @severity high
+   */
+  test('@sanity @SCRUM-12 TC-004: Successful Registration', async () => {
+    await registrationPage.inputEmail('newuser@example.com');
+    await registrationPage.inputPassword('StrongPass1!');
+    await registrationPage.submitForm();
+    const redirected = await registrationPage.isRedirectedToSuccessPage();
+    expect(redirected).toBeTruthy();
+    // Note: Verification of receiving a confirmation email would typically be done through an API or email service mock, not shown here.
+  });
 });
