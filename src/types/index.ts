@@ -232,6 +232,76 @@ export interface GateResult {
 }
 
 // ------------------------------------------------------------
+// RCA — Root Cause Analysis
+// ------------------------------------------------------------
+export type RCACategory =
+  | 'UI Issue'
+  | 'Frontend Issue'
+  | 'Backend Issue'
+  | 'Data Issue'
+  | 'Environment Issue';
+
+export interface CapturedConsoleError {
+  level: string;
+  message: string;
+}
+
+export interface CapturedNetworkRequest {
+  method: string;
+  url: string;
+  status?: number;
+  responseTime?: number;
+}
+
+export interface TestEvidence {
+  testName: string;
+  testSlug: string;
+  screenshotPath: string | null;
+  consoleErrors: string[];
+  networkRequests: CapturedNetworkRequest[];
+  domSnapshot: string | null;
+}
+
+export interface RCAResult {
+  testName: string;
+  category: RCACategory;
+  reason: string;
+  consoleErrors: string[];
+  apiLog: string;
+  suggestedFix: string;
+  assignTo: string;
+  screenshotPath: string | null;
+}
+
+// ------------------------------------------------------------
+// Test Execution
+// ------------------------------------------------------------
+export interface FailedTest {
+  title: string;
+  file: string;
+  error: string;
+  screenshotPath: string | null;
+  fullPageScreenshotPath: string | null;
+  consoleErrors: string[];
+  networkRequests: CapturedNetworkRequest[];
+  domSnapshot: string | null;
+  rca: RCAResult | null;
+}
+
+export interface TestExecutionResult {
+  filePath: string;
+  type: TestType;
+  passed: number;
+  failed: number;
+  skipped: number;
+  total: number;
+  durationMs: number;
+  failedTests: FailedTest[];
+  healAttempts: number;
+  ultimatelyPassed: boolean;
+}
+
+// ------------------------------------------------------------
 // Git / PR
 // ------------------------------------------------------------
 export interface PullRequestInfo {
@@ -260,12 +330,14 @@ export interface AllureTag {
 export interface QIARun {
   id: string;
   ticketKey: string;
+  extraContext: string | null;
   startedAt: string;
   completedAt: string | null;
   status: 'running' | 'awaiting_gate' | 'completed' | 'failed' | 'cancelled';
   phases: PhaseResult[];
   gates: GateResult[];
   generatedTests: GeneratedTest[];
+  executionResults: TestExecutionResult[];
   pullRequest: PullRequestInfo | null;
   jiraUpdated: boolean;
 }

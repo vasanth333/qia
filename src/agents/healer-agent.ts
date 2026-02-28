@@ -8,7 +8,8 @@ import fs from 'fs';
 import OpenAI from 'openai';
 import chalk from 'chalk';
 import { agentConfig } from '../config/agent.config.js';
-import type { HealResult, HealingReport, FrameworkDNA } from '../types/index.js';
+import { ExecutorAgent } from './executor-agent.js';
+import type { HealResult, HealingReport, FrameworkDNA, GeneratedTest, TestExecutionResult } from '../types/index.js';
 
 export class HealerAgent {
   private readonly openai: OpenAI;
@@ -17,6 +18,40 @@ export class HealerAgent {
   constructor(dna: FrameworkDNA) {
     this.openai = new OpenAI({ apiKey: agentConfig.openaiApiKey });
     this.dna = dna;
+  }
+
+  /**
+   * Heals locators in a test file, re-runs, loops up to maxAttempts times.
+   * Returns the final TestExecutionResult after healing loop.
+   */
+  async healAndRerun(
+    generatedTest: GeneratedTest,
+    initialResult: TestExecutionResult,
+    projectRoot: string = process.cwd()
+  ): Promise<TestExecutionResult> {
+    const executor = new ExecutorAgent(projectRoot);
+    let current = initialResult;
+    let attempt = 0;
+    const maxAttempts = agentConfig.maxHealAttempts;
+
+    while (current.failed > 0 && attempt < maxAttempts) {
+      attempt++;
+      console.log(chalk.yellow(`\n[HealerAgent] Heal attempt ${attempt}/${maxAttempts} for: ${generatedTest.filePath}`));
+
+      await this.healFile(generatedTest.filePath);
+
+      console.log(chalk.cyan(`[HealerAgent] Re-running after heal...`));
+      current = await executor.executeTest(generatedTest);
+      current.healAttempts = attempt;
+
+      if (current.failed === 0) {
+        console.log(chalk.green(`[HealerAgent] All tests passing after ${attempt} heal attempt(s)`));
+        break;
+      }
+    }
+
+    current.ultimatelyPassed = current.failed === 0;
+    return current;
   }
 
   async healFile(filePath: string): Promise<HealingReport> {

@@ -29,7 +29,9 @@ export class ApprovalGate {
 
     this.printArtifacts(context);
 
-    if (agentConfig.autoApproveGates) {
+    // Check env var directly in addition to agentConfig (handles --auto-approve CLI flag
+    // which sets the env var after agentConfig is already loaded at import time)
+    if (agentConfig.autoApproveGates || process.env['QIA_AUTO_APPROVE_GATES'] === 'true') {
       console.log(chalk.blue('[Gate] Auto-approve mode enabled — proceeding automatically'));
       return this.buildResult(gate, 'approved', 'QIA Auto-Approve', '');
     }
@@ -145,12 +147,35 @@ export class ApprovalGate {
     };
   }
 
-  buildGate2Context(tests: import('../types/index.js').GeneratedTest[]): GateContext {
+  buildGate2Context(
+    tests: import('../types/index.js').GeneratedTest[],
+    executionResults?: import('../types/index.js').TestExecutionResult[]
+  ): GateContext {
     const fileList = tests
       .map(t => `  • ${t.filePath} (${t.scenarioCount} tests, ${t.type})`)
       .join('\n');
 
     const firstTest = tests[0];
+
+    const execSummary = executionResults && executionResults.length > 0
+      ? (() => {
+          const passed = executionResults.reduce((s, r) => s + r.passed, 0);
+          const failed = executionResults.reduce((s, r) => s + r.failed, 0);
+          const skipped = executionResults.reduce((s, r) => s + r.skipped, 0);
+          const healed = executionResults.filter(r => r.healAttempts > 0).length;
+          const lines = [
+            `  Passed: ${passed}  Failed: ${failed}  Skipped: ${skipped}`,
+            ...(healed > 0 ? [`  Self-healed files: ${healed}`] : []),
+          ];
+          for (const r of executionResults) {
+            for (const ft of r.failedTests) {
+              lines.push(`  ✗ ${ft.title}`);
+              lines.push(`    ${ft.error.split('\n')[0]}`);
+            }
+          }
+          return lines.join('\n');
+        })()
+      : '  (Tests not yet executed)';
 
     return {
       gate: 2,
@@ -160,6 +185,7 @@ export class ApprovalGate {
       timeoutMinutes: agentConfig.gateTimeoutMinutes,
       artifacts: [
         { label: 'GENERATED FILES', value: fileList, type: 'text' },
+        { label: 'EXECUTION RESULTS', value: execSummary, type: 'text' },
         ...(firstTest ? [{
           label: `PREVIEW: ${firstTest.filePath}`,
           value: firstTest.content.slice(0, 2000),

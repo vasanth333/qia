@@ -51,6 +51,16 @@ Think step by step. For EACH acceptance criterion, map it to specific test scena
 Consider all test types: ui, api, visual, security, performance, accessibility.
 Only include test types that are actually relevant to this ticket.
 
+FILE NAMING RULES (CRITICAL — follow exactly):
+- NEVER include the ticket key in the filename
+- Use descriptive names that describe what is being tested
+- Examples:
+  ✅ "login-negative.spec.ts"
+  ✅ "checkout-validation.spec.ts"
+  ✅ "registration-form.spec.ts"
+  ❌ "scrum-13-login.spec.ts"  ← WRONG, never prefix with ticket ID
+  ❌ "SCRUM-13-tests.spec.ts"  ← WRONG
+
 Return JSON:
 {
   "ticketKey": "${ticket.key}",
@@ -63,7 +73,7 @@ Return JSON:
     {
       "type": "ui",
       "priority": "critical",
-      "filePath": "src/framework/tests/ui/${ticket.key.toLowerCase()}-login.spec.ts",
+      "filePath": "src/framework/tests/ui/login-negative.spec.ts",
       "reasoning": "Why this suite",
       "scenarios": [
         {
@@ -97,7 +107,7 @@ Return JSON:
       return {
         ticketKey: ticket.key,
         reasoning: parsed.reasoning ?? 'AI reasoning not available',
-        testSuites: (parsed.testSuites ?? []).map(s => this.normalizeTestSuite(s)),
+        testSuites: (parsed.testSuites ?? []).map(s => this.normalizeTestSuite(s, ticket.key)),
         estimatedCount: parsed.estimatedCount ?? 0,
         riskAreas: parsed.riskAreas ?? [],
         coverageGoal: parsed.coverageGoal ?? '100% AC coverage',
@@ -109,11 +119,28 @@ Return JSON:
     }
   }
 
-  private normalizeTestSuite(suite: Partial<TestSuite>): TestSuite {
+  private normalizeTestSuite(suite: Partial<TestSuite>, ticketKey: string): TestSuite {
+    let filePath = suite.filePath ?? 'src/framework/tests/ui/generated-tests.spec.ts';
+
+    // Enforce naming rule: strip ticket key prefix if AI ignored the instructions
+    const ticketLower = ticketKey.toLowerCase();
+    const basename = filePath.split('/').pop() ?? '';
+    if (basename.toLowerCase().startsWith(ticketLower)) {
+      const stripped = basename.slice(ticketLower.length).replace(/^[-_]/, '');
+      filePath = filePath.replace(basename, stripped || 'tests.spec.ts');
+    }
+
+    // Ensure tests go into the right directory based on type
+    const type = (suite.type ?? 'ui') as TestType;
+    if (!filePath.includes(`/tests/${type}/`)) {
+      const base = filePath.split('/').pop() ?? 'tests.spec.ts';
+      filePath = `src/framework/tests/${type}/${base}`;
+    }
+
     return {
-      type: (suite.type ?? 'ui') as TestType,
+      type,
       priority: suite.priority ?? 'high',
-      filePath: suite.filePath ?? 'src/framework/tests/ui/generated.spec.ts',
+      filePath,
       reasoning: suite.reasoning ?? '',
       scenarios: (suite.scenarios ?? []).map(s => this.normalizeScenario(s)),
     };
@@ -132,13 +159,22 @@ Return JSON:
   }
 
   private fallbackStrategy(ticket: JiraTicket): TestStrategy {
+    // Derive a descriptive filename from the ticket summary (no ticket key prefix)
+    const descName = ticket.summary
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 40)
+      || 'tests';
+
     return {
       ticketKey: ticket.key,
       reasoning: `Generating basic UI test coverage for ${ticket.key}: ${ticket.summary}`,
       testSuites: [{
         type: 'ui',
         priority: 'high',
-        filePath: `src/framework/tests/ui/${ticket.key.toLowerCase()}.spec.ts`,
+        filePath: `src/framework/tests/ui/${descName}.spec.ts`,
         reasoning: 'Default UI test suite',
         scenarios: ticket.acceptanceCriteria.map((ac, i) => ({
           id: `TC-${String(i + 1).padStart(3, '0')}`,
