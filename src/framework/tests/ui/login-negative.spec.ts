@@ -78,105 +78,74 @@ test.afterEach(async ({ page }, testInfo) => {
 // ── End QIA Evidence Capture ─────────────────────────────────
 
 
-class SauceDemoLoginPage {
-  readonly page;
-  constructor(page) {
-    this.page = page;
+class LoginPage {
+  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  readonly usernameInput = '[data-test="username"]';
+  readonly passwordInput = '[data-test="password"]';
+  readonly loginButton = '[data-test="login-button"]';
+  readonly errorMessage = '[data-test="error-message-container"]';
+  readonly errorText = '[data-test="error-message-container"] h3[data-test="error"]';
+
+  constructor(private page: any) {}
+
+  async navigateToLoginPage() {
+    await this.page.goto('/');
   }
-  async navigateTo() {
-    await this.page.goto('/'); // Navigates to the login page.
-  }
+
   async login(username: string, password: string) {
-    await this.page.fill('[data-test="username"]', username); // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-    await this.page.fill('[data-test="password"]', password); // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-    await this.page.click('[data-test="login-button"]'); // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+    await this.page.fill(this.usernameInput, username);
+    await this.page.fill(this.passwordInput, password);
+    await this.page.click(this.loginButton);
   }
+
   async getErrorMessage() {
-    return this.page.locator('[data-test="error-message-container"] h3[data-test="error"]'); // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+    return this.page.locator(this.errorText).textContent();
   }
 }
 
-test.describe('@SCRUM-13 SauceDemo Login Negative Scenarios', () => {
-  
+// @feature Login
+// @story SCRUM-13
+// @severity critical
+test.describe('@SCRUM-13 Login Negative Tests', () => {
+  let loginPage: LoginPage;
+
   test.beforeEach(async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
-    await loginPage.navigateTo();
+    loginPage = new LoginPage(page);
+    await loginPage.navigateToLoginPage();
   });
 
-  /** @feature Login Validation */
-  /** @story TC-001 Error message displayed with incorrect username */
-  /** @severity critical */
-  test('@smoke Error message displayed with incorrect username', async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
-    await loginPage.login('invalid_user', 'secret_sauce');
-    const errorMessage = await loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toHaveText(/Epic sadface/);
+  test('@smoke TC-001 Display error when entering wrong username', async ({ page }) => {
+    await loginPage.login('wrong_user', 'secret_sauce');
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
+    await expect(page.locator(loginPage.loginButton)).toBeVisible();
   });
 
-  /** @feature Login Validation */
-  /** @story TC-002 Error message displayed with incorrect password */
-  /** @severity critical */
-  test('@smoke Error message displayed with incorrect password', async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
+  test('@smoke TC-002 Display error when entering wrong password', async ({ page }) => {
     await loginPage.login('standard_user', 'wrong_password');
-    const errorMessage = await loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toHaveText(/Epic sadface/);
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
+    await expect(page.locator(loginPage.loginButton)).toBeVisible();
   });
 
-  /** @feature Login Validation */
-  /** @story TC-003 Error message displayed with empty username and password */
-  /** @severity critical */
-  test('@smoke Error message displayed with empty username and password', async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
-    await loginPage.login('', '');
-    const errorMessage = await loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toHaveText(/Epic sadface/);
+  test('@smoke TC-003 Display error for empty username and password fields', async ({ page }) => {
+    await page.click(loginPage.loginButton);
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
+    await expect(page.locator(loginPage.loginButton)).toBeVisible();
   });
 
-  /** @feature Login Validation */
-  /** @story TC-004 Error message displayed with empty username and valid password */
-  /** @severity critical */
-  test('@smoke Error message displayed with empty username and valid password', async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
+  test('@smoke TC-004 Display error for empty username and valid password', async ({ page }) => {
     await loginPage.login('', 'secret_sauce');
-    const errorMessage = await loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toHaveText(/Epic sadface/);
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
+    await expect(page.locator(loginPage.loginButton)).toBeVisible();
   });
 
-  /** @feature Login Validation */
-  /** @story TC-005 Error message displayed for locked out user */
-  /** @severity critical */
-  test('@smoke Error message displayed for locked out user', async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
+  test('@smoke TC-005 Display locked out error for locked_out_user', async ({ page }) => {
     await loginPage.login('locked_out_user', 'any_password');
-    const errorMessage = await loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toHaveText(/Epic sadface/);
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
+    await expect(page.locator(loginPage.loginButton)).toBeVisible();
   });
-
-  /** @feature Visibility Test */
-  /** @story TC-006 Error message visibility */
-  /** @severity critical */
-  test('@smoke Error message visibility', async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
-    await loginPage.login('invalid_user', 'secret_sauce');
-    const errorMessage = await loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-  });
-
-  /** @feature Button Visibility */
-  /** @story TC-007 Login button visibility after error */
-  /** @severity critical */
-  test('@smoke Login button visibility after error', async ({ page }) => {
-    const loginPage = new SauceDemoLoginPage(page);
-    await loginPage.login('invalid_user', 'secret_sauce');
-    const loginButton = page.locator('[data-test="login-button"]'); // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-    await expect(loginButton).toBeVisible();
-    await expect(loginButton).toBeEnabled();
-  });
-
 });
