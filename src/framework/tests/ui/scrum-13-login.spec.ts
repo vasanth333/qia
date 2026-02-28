@@ -1,45 +1,40 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * @feature Login Error Handling
+ * @feature SauceDemo Login Error Messages
  * @story SCRUM-13
  * @severity critical
  */
 class LoginPage {
-  constructor(private page) {}
+  constructor(private readonly page: import('@playwright/test').Page) {}
 
-  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+  // [TIER1: data-test] [TIER2: role] [TIER3: placeholder]
   async navigate() {
-    await this.page.goto('/login');
+    await this.page.goto('https://www.saucedemo.com');
   }
 
-  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-  async enterUsername(username: string) {
-    await this.page.fill('[data-testid="username"]', username);
+  async login(username: string, password: string) {
+    await this.page.locator('[data-test="username"]').fill(username);
+    await this.page.locator('[data-test="password"]').fill(password);
+    await this.page.locator('[data-test="login-button"]').click();
   }
 
-  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-  async enterPassword(password: string) {
-    await this.page.fill('[data-testid="password"]', password);
+  async getErrorMessage(): Promise<string> {
+    return await this.page.locator('[data-test="error"]').innerText();
   }
 
-  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-  async submit() {
-    await this.page.click('[data-testid="login-button"]');
+  async isErrorVisible(): Promise<boolean> {
+    return await this.page.locator('[data-test="error"]').isVisible();
   }
 
-  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-  async getErrorMessage() {
-    return this.page.locator('[data-testid="error-message"]');
-  }
-
-  // [TIER1: testid] [TIER2: role] [TIER3: fallback]
-  async isLoginButtonVisible() {
-    return this.page.isVisible('[data-testid="login-button"]');
+  async isLoginButtonVisible(): Promise<boolean> {
+    return await this.page.locator('[data-test="login-button"]').isVisible();
   }
 }
 
-test.describe('Login Error Handling', () => {
+const VALID_PASSWORD = 'secret_sauce';
+
+test.describe('SCRUM-13: SauceDemo Login — Error Messages', () => {
   let loginPage: LoginPage;
 
   test.beforeEach(async ({ page }) => {
@@ -47,65 +42,93 @@ test.describe('Login Error Handling', () => {
     await loginPage.navigate();
   });
 
-  test('TC-001: Incorrect username leads to error message @SCRUM-13 @smoke', async () => {
-    await loginPage.enterUsername('incorrect');
-    await loginPage.enterPassword('validpassword');
-    await loginPage.submit();
-    const errorMessage = loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toContainText('Epic sadface');
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity critical
+   */
+  test('@smoke @SCRUM-13 TC-001: Wrong username → error shown', async () => {
+    await loginPage.login('wrong_user', VALID_PASSWORD);
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
+    expect(error).toContain('do not match any user');
   });
 
-  test('TC-002: Incorrect password leads to error message @SCRUM-13 @regression', async () => {
-    await loginPage.enterUsername('validusername');
-    await loginPage.enterPassword('incorrect');
-    await loginPage.submit();
-    const errorMessage = loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toContainText('Epic sadface');
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity critical
+   */
+  test('@smoke @SCRUM-13 TC-002: Wrong password → error shown', async () => {
+    await loginPage.login('standard_user', 'wrong_password');
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
   });
 
-  test('TC-003: Empty username and password lead to error message @SCRUM-13 @regression', async () => {
-    await loginPage.enterUsername('');
-    await loginPage.enterPassword('');
-    await loginPage.submit();
-    const errorMessage = loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toContainText('Epic sadface');
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity critical
+   */
+  test('@regression @SCRUM-13 TC-003: Empty username + empty password → error shown', async () => {
+    await loginPage.login('', '');
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Username is required');
   });
 
-  test('TC-004: Empty username with valid password leads to error message @SCRUM-13 @regression', async () => {
-    await loginPage.enterUsername('');
-    await loginPage.enterPassword('validpassword');
-    await loginPage.submit();
-    const errorMessage = loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toContainText('Epic sadface');
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity critical
+   */
+  test('@regression @SCRUM-13 TC-004: Empty username + valid password → error shown', async () => {
+    await loginPage.login('', VALID_PASSWORD);
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Username is required');
   });
 
-  test('TC-005: Locked-out user receives specific error message @SCRUM-13 @regression', async () => {
-    await loginPage.enterUsername('lockedoutuser');
-    await loginPage.enterPassword('anyPassword');
-    await loginPage.submit();
-    const errorMessage = loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toContainText('Epic sadface');
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity critical
+   */
+  test('@regression @SCRUM-13 TC-005: locked_out_user → locked out error shown', async () => {
+    await loginPage.login('locked_out_user', VALID_PASSWORD);
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
+    expect(error).toContain('locked out');
   });
 
-  test('TC-006: Error message is visible to user @SCRUM-13 @usability', async () => {
-    await loginPage.enterUsername('anyusername');
-    await loginPage.enterPassword('wrongpassword');
-    await loginPage.submit();
-    const errorMessage = loginPage.getErrorMessage();
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toBeTruthy();
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity high
+   */
+  test('@regression @SCRUM-13 TC-006: Error contains "Epic sadface" text', async () => {
+    await loginPage.login('invalid_user', 'invalid_pass');
+    const error = await loginPage.getErrorMessage();
+    expect(error).toContain('Epic sadface');
   });
 
-  test('TC-007: Login button remains visible after error displayed @SCRUM-13 @usability', async () => {
-    await loginPage.enterUsername('invalid');
-    await loginPage.enterPassword('invalid');
-    await loginPage.submit();
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity high
+   */
+  test('@regression @SCRUM-13 TC-007: Error message is visible', async () => {
+    await loginPage.login('wrong_user', VALID_PASSWORD);
+    const visible = await loginPage.isErrorVisible();
+    expect(visible).toBe(true);
+  });
+
+  /**
+   * @feature Login Error Handling
+   * @story SCRUM-13
+   * @severity high
+   */
+  test('@regression @SCRUM-13 TC-008: Login button visible after failure', async () => {
+    await loginPage.login('wrong_user', VALID_PASSWORD);
     const loginButtonVisible = await loginPage.isLoginButtonVisible();
-    expect(loginButtonVisible).toBeTruthy();
+    expect(loginButtonVisible).toBe(true);
   });
 });
