@@ -1,0 +1,23 @@
+{
+  "key": "SCRUM-14",
+  "summary": "Verify SauceDemo Homepage and Login",
+  "description": "End-to-end verification of the SauceDemo homepage load, login form, valid/invalid login flows, inventory display, product images, and add-to-cart button visibility.",
+  "acceptanceCriteria": [
+    "Homepage loads successfully at https://www.saucedemo.com/ with title 'Swag Labs'",
+    "Login form is visible with username and password fields",
+    "User can login with standard_user / secret_sauce",
+    "After login — product inventory page loads at /inventory.html",
+    "Page title (app logo) shows 'Swag Labs'",
+    "All product images load correctly — no broken images",
+    "Add to cart button is visible on the first product"
+  ],
+  "priority": "High",
+  "issueType": "Story",
+  "labels": ["e2e", "smoke", "saucedemo"],
+  "components": ["UI", "Login", "Inventory"],
+  "assignee": null,
+  "reporter": "QIA Agent",
+  "status": "In Progress",
+  "linkedIssues": [],
+  "attachments": []
+}

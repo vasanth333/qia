@@ -23,6 +23,31 @@ export class ReaderAgent {
   async readTicket(ticketKey: string, extraContext: string | null = null): Promise<JiraTicket> {
     console.log(chalk.cyan(`\n[ReaderAgent] Fetching Jira ticket: ${ticketKey}`));
 
+    // ── Mock bypass: set QIA_MOCK_TICKET_JSON env var or point QIA_MOCK_TICKET_FILE
+    // to a JSON file containing a JiraTicket object. Useful for offline/CI runs.
+    const mockJson = process.env['QIA_MOCK_TICKET_JSON'];
+    const mockFile = process.env['QIA_MOCK_TICKET_FILE'];
+    if (mockJson || mockFile) {
+      let raw: string | undefined = mockJson;
+      if (!raw && mockFile) {
+        const resolved = path.resolve(process.cwd(), mockFile);
+        if (fs.existsSync(resolved)) {
+          raw = fs.readFileSync(resolved, 'utf-8');
+        }
+      }
+      if (raw) {
+        console.log(chalk.yellow(`[ReaderAgent] Using mock ticket (QIA_MOCK_TICKET_FILE/JSON)`));
+        const ticket = JSON.parse(raw) as JiraTicket;
+        ticket.key = ticketKey; // always use the CLI-supplied key
+        if (extraContext) {
+          const extra = await this.resolveExtraContext(extraContext);
+          if (extra) ticket.acceptanceCriteria.push(...this.parseExtraContextIntoAC(extra, extraContext));
+        }
+        console.log(chalk.green(`[ReaderAgent] Mock ticket loaded: "${ticket.summary}"`));
+        return ticket;
+      }
+    }
+
     const raw = await this.fetchJiraTicket(ticketKey);
     const ticket = await this.extractStructuredTicket(raw);
 
