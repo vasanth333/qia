@@ -1,6 +1,6 @@
 {
   "projectName": "qia",
-  "scannedAt": "2026-02-28T00:16:51.648Z",
+  "scannedAt": "2026-03-02T01:59:36.128Z",
   "language": "typescript",
   "testFramework": "playwright",
   "playwrightVersion": "^1.49.0",
@@ -17,8 +17,8 @@
     "pageFiles": "*.page.ts",
     "helperFiles": "*.helper.ts",
     "fixtureFiles": "*.fixture.ts",
-    "describeBlocks": "describe",
-    "testNames": "camelCase",
+    "describeBlocks": "PascalCase or camelCase",
+    "testNames": "PascalCase or camelCase",
     "variables": "camelCase",
     "constants": "UPPER_SNAKE"
   },
@@ -39,13 +39,15 @@
     }
   ],
   "apiClientPattern": null,
-  "existingHelpers": [],
+  "existingHelpers": [
+    "locator.helper.ts"
+  ],
   "testTags": [
+    "@api",
+    "@ui",
+    "@security",
     "@smoke",
     "@regression",
-    "@ui",
-    "@api",
-    "@security",
     "@visual"
   ],
   "existingTests": [
@@ -77,6 +79,34 @@
         "example"
       ],
       "type": "api"
+    },
+    {
+      "filePath": "src/framework/tests/ui/login-negative.spec.ts",
+      "testCount": 8,
+      "tags": [
+        "playwright",
+        "feature",
+        "SCRUM-13",
+        "smoke",
+        "regression"
+      ],
+      "type": "ui"
+    },
+    {
+      "filePath": "src/framework/tests/ui/saucedemo-homepage.spec.ts",
+      "testCount": 8,
+      "tags": [
+        "Epic",
+        "Feature",
+        "Story",
+        "Owner",
+        "playwright",
+        "Severity",
+        "smoke",
+        "Step",
+        "regression"
+      ],
+      "type": "ui"
     },
     {
       "filePath": "src/framework/tests/ui/scrum-11-login.spec.ts",
@@ -111,6 +141,20 @@
       "type": "ui"
     },
     {
+      "filePath": "src/framework/tests/ui/scrum-13-login.spec.ts",
+      "testCount": 8,
+      "tags": [
+        "playwright",
+        "feature",
+        "story",
+        "severity",
+        "smoke",
+        "SCRUM-13",
+        "regression"
+      ],
+      "type": "ui"
+    },
+    {
       "filePath": "src/framework/tests/ui/scrum-5-login.spec.ts",
       "testCount": 5,
       "tags": [
@@ -126,14 +170,12 @@
     }
   ],
   "importPaths": {
-    "BaseApiClient": "src/framework/clients/api.client.ts",
-    "BasePage": "src/framework/pages/base.page.ts",
-    "smartLocator": "src/framework/helpers/locator.helper.ts",
-    "test as base": "src/framework/fixtures/base.fixture.ts"
+    "saucedemoHomePage": "../../pages/SauceDemoPage.js",
+    "loginPage": "../../pages/LoginPage"
   },
   "codingStyle": {
     "usesStrictMode": true,
-    "usesESModules": true,
+    "usesESModules": false,
     "quotStyle": "single",
     "trailingComma": true,
     "semicolons": true,
