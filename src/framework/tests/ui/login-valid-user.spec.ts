@@ -96,7 +96,7 @@ class SauceDemoPage {
   }
 
   async assertInventoryPageLoaded() {
-    await expect(this.page).toHaveURL('**/inventory.html');
+    await expect(this.page).toHaveURL(/inventory\.html/);
   }
 
   async assertErrorMessageVisible() {

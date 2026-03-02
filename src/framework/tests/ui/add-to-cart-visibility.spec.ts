@@ -98,16 +98,20 @@ test.describe('@SCRUM-14', () => {
         await this.page.goto('/');
       }
 
-      // [TIER1: testid] [TIER2: role] [TIER3: fallback]
+      // [TIER1: data-test] [TIER2: role] [TIER3: fallback]
       get addToCartButton() {
-        return this.page.locator('[data-testid="add-to-cart-button"]').first();
+        return this.page.locator('[data-test^="add-to-cart"]').first();
       }
     }
 
     const inventoryPage = new InventoryPage(page);
 
-    // Given the user is on the inventory page
+    // Given the user logs in and lands on the inventory page
     await inventoryPage.goto();
+    await page.locator('[data-test="username"]').fill('standard_user');
+    await page.locator('[data-test="password"]').fill('secret_sauce');
+    await page.locator('[data-test="login-button"]').click();
+    await expect(page).toHaveURL(/inventory\.html/);
 
     // Then an add-to-cart button should be visible on the first product listed
     await expect(inventoryPage.addToCartButton).toBeVisible();
